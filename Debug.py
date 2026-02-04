@@ -1,49 +1,60 @@
-import json
-import re
+import streamlit as st
+import numpy as np
+import matplotlib.pyplot as plt
 
-def debug_calculus_json(file_path):
-    print(f"--- '{file_path}' 디버깅 시작 ---")
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            raw_data = f.read()
+def render_relative_acceleration_module():
+    st.header("Interactive Module: Relative Acceleration Vector")
+    st.write("""
+    In Dynamics, we analyze the acceleration of point $B$ relative to a moving reference frame $A$ 
+    using the vector addition: $\\vec{a}_B = \\vec{a}_A + \\vec{a}_{B/A}$.
+    """)
 
-        # 1. 보이지 않는 특수 공백(Zero-width space, Non-breaking space) 확인
-        hidden_chars = re.findall(r'[\u00A0\u200b\u200c\u200d\ufeff]', raw_data)
-        if hidden_chars:
-            print(f"⚠️ 경고: {len(hidden_chars)}개의 보이지 않는 특수 문자가 발견되었습니다. 제거를 시도합니다.")
-            raw_data = re.sub(r'[\u00A0\u200b\u200c\u200d\ufeff]', ' ', raw_data)
+    # Sidebar for Student Inputs
+    st.sidebar.subheader("Vector Parameters")
+    
+    # Acceleration of Point A (Reference)
+    ax_a = st.sidebar.slider("a_A x-component (m/s²)", -10.0, 10.0, 5.0)
+    ay_a = st.sidebar.slider("a_A y-component (m/s²)", -10.0, 10.0, 2.0)
+    
+    # Relative Acceleration B/A
+    ax_ba = st.sidebar.slider("a_{B/A} x-component (m/s²)", -10.0, 10.0, -3.0)
+    ay_ba = st.sidebar.slider("a_{B/A} y-component (m/s²)", -10.0, 10.0, 6.0)
 
-        # 2. 잘못된 백슬래시(Single Backslash) 패턴 찾기
-        # JSON에서 허용되지 않는 백슬래시 조합(\l, \s, \f 등)을 찾습니다.
-        invalid_escapes = re.findall(r'\\(?![\\"/bfnrtu])', raw_data)
-        if invalid_escapes:
-            print(f"⚠️ 경고: {len(invalid_escapes)}개의 잘못된 백슬래시 이스케이프가 발견되었습니다.")
-            # 자동 교정: \ -> \\
-            raw_data = re.sub(r'\\(?![\\"/bfnrtu])', r'\\\\', raw_data)
+    # Calculate Resultant a_B
+    ax_b = ax_a + ax_ba
+    ay_b = ay_a + ay_ba
 
-        # 3. JSON 파싱 시도
-        try:
-            data = json.loads(raw_data)
-            print("✅ 결과: JSON 형식이 이제 완벽합니다!")
-            
-            # 교정된 내용을 새 파일로 저장 (백업 후 덮어쓰기 권장)
-            with open('calculus_problems_fixed.json', 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
-            print("💾 교정된 파일이 'calculus_problems_fixed.json'으로 저장되었습니다.")
-            
-        except json.JSONDecodeError as e:
-            print(f"❌ 실패: 여전히 문법 오류가 존재합니다.")
-            print(f"📍 위치: {e.lineno}행 {e.colno}열")
-            # 에러 주변 텍스트 출력
-            lines = raw_data.split('\n')
-            start = max(0, e.lineno - 2)
-            end = min(len(lines), e.lineno + 1)
-            for i in range(start, end):
-                prefix = ">> " if i == e.lineno - 1 else "   "
-                print(f"{i+1}{prefix}{lines[i]}")
+    # Plotting the Vectors
+    fig, ax = plt.subplots(figsize=(8, 8))
+    origin = [0, 0]
 
-    except Exception as e:
-        print(f"❌ 파일 읽기 오류: {e}")
+    # Vector A (Blue)
+    ax.quiver(0, 0, ax_a, ay_a, color='b', angles='xy', scale_units='xy', scale=1, label=r'$\vec{a}_A$')
+    
+    # Vector B/A (Green) - Starting from the tip of A
+    ax.quiver(ax_a, ay_a, ax_ba, ay_ba, color='g', angles='xy', scale_units='xy', scale=1, label=r'$\vec{a}_{B/A}$')
+    
+    # Vector B (Red) - The Resultant
+    ax.quiver(0, 0, ax_b, ay_b, color='r', angles='xy', scale_units='xy', scale=1, label=r'$\vec{a}_B$')
+
+    # Formatting the Plot
+    limit = max(abs(ax_b), abs(ay_b), abs(ax_a), abs(ay_a)) + 2
+    ax.set_xlim(-limit, limit)
+    ax.set_ylim(-limit, limit)
+    ax.grid(True, linestyle='--')
+    ax.set_aspect('equal')
+    ax.legend()
+    ax.set_title("Vector Addition: Acceleration of B")
+    
+    st.pyplot(fig)
+
+    # Socratic Checkpoint
+    st.subheader("Socratic Insight")
+    st.info("If Point A is moving at a constant velocity, what happens to the relationship between $\\vec{a}_B$ and $\\vec{a}_{B/A}$?")
+    
+    answer = st.text_input("Your reasoning:")
+    if answer:
+        st.write("Excellent thought. If $\\vec{a}_A = 0$, then $\\vec{a}_B = \\vec{a}_{B/A}$. This confirms that for an inertial reference frame, relative and absolute acceleration are identical.")
 
 if __name__ == "__main__":
-    debug_calculus_json('calculus_problems.json')
+    render_relative_acceleration_module()
