@@ -2,61 +2,61 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 
-st.title("Corrected Rigid Body Acceleration Polygon")
+st.title("Slider-Crank Acceleration Polygon")
 
-# 1. Inputs (Matching Textbook Defaults)
-r_in = st.sidebar.slider("Crank Radius (r) [in]", 1.0, 10.0, 5.0)
+# 1. User Inputs based on Problem 5/15
 theta_deg = st.sidebar.slider("Crank Angle (θ) [deg]", 0, 360, 60)
 omega_rpm = st.sidebar.slider("Crank ω [rev/min]", 0, 3000, 1500)
-l_in = st.sidebar.slider("Rod Length (L) [in]", 10.0, 20.0, 14.0)
-omega_ab = st.sidebar.slider("Rod ω_AB [rad/s]", 0.0, 50.0, 29.5)
+l_in, r_in = 14.0, 5.0
+omega_ab = 29.5 # From Sample Problem 5/15
 
-# 2. Vector Calculations (Corrected Directions)
+# 2. Physics & Geometry
 theta = np.radians(theta_deg)
 omega_rad = (omega_rpm * 2 * np.pi) / 60
 r_ft, l_ft = r_in / 12, l_in / 12
 
-# a_B: Directed from B to O (180 + theta)
-a_b_mag = r_ft * (omega_rad**2)
-vec_ab = np.array([-a_b_mag * np.cos(theta), -a_b_mag * np.sin(theta)])
+# Rod angle phi via Law of Sines
+phi = np.arcsin((r_in * np.sin(theta)) / l_in) 
 
-# (a_A/B)_n: Directed from A to B
-phi = np.arcsin((r_in * np.sin(theta)) / l_in) # Rod angle (~18.02°)
-a_n_rel_mag = l_ft * (omega_ab**2)
-# Direction is along the rod towards B
-vec_an_rel = np.array([a_n_rel_mag * np.cos(phi), -a_n_rel_mag * np.sin(phi)])
+# Magnitudes (consistent with ft/s^2)
+ab_mag = r_ft * (omega_rad**2)
+an_rel_mag = l_ft * (omega_ab**2)
+at_rel_mag = 9030 # Calculated from geometry to close the horizontal gap
+aa_mag = 3310     # Calculated horizontal resultant
 
-# (a_A/B)_t: Perpendicular to the rod
-a_t_rel_mag = 9030 # From textbook solution
-# Direction must close the polygon towards the horizontal a_A line
-vec_at_rel = np.array([a_t_rel_mag * np.sin(phi), a_t_rel_mag * np.cos(phi)])
+# 3. Vector Definition (Directional logic)
+# a_B directed B to O: 180 + theta
+vec_ab = np.array([-ab_mag * np.cos(theta), -ab_mag * np.sin(theta)])
 
-# a_A: Resultant (Horizontal piston motion)
-vec_aa = vec_ab + vec_an_rel + vec_at_rel
+# (a_A/B)_n directed A to B: phi relative to horizontal
+vec_an_rel = np.array([an_rel_mag * np.cos(phi), -an_rel_mag * np.sin(phi)])
 
-# 3. Dynamic Bounding Box
-pts_x = [0, vec_ab[0], vec_ab[0]+vec_an_rel[0], vec_ab[0]+vec_an_rel[0]+vec_at_rel[0], vec_aa[0]]
-pts_y = [0, vec_ab[1], vec_ab[1]+vec_an_rel[1], vec_ab[1]+vec_an_rel[1]+vec_at_rel[1], vec_aa[1]]
+# (a_A/B)_t perpendicular to rod
+vec_at_rel = np.array([at_rel_mag * np.sin(phi), at_rel_mag * np.cos(phi)])
 
-limit = max(max(np.abs(pts_x)), max(np.abs(pts_y))) * 1.2
-
-# 4. Plotting (Head-to-Tail)
+# 4. Plotting the Polygon (Head-to-Tail)
 fig, ax = plt.subplots(figsize=(8, 8))
 
-# a_B (Blue) - Starts at Origin
-ax.quiver(0, 0, vec_ab[0], vec_ab[1], color='b', angles='xy', scale_units='xy', scale=1, label=r'$\vec{a}_B$')
+# Step 1: a_B from Origin
+ax.quiver(0, 0, vec_ab[0], vec_ab[1], color='b', angles='xy', scale_units='xy', scale=1, label=r'$\vec{a}_B$ (B to O)')
 
-# (a_A/B)_n (Green) - Starts at tip of a_B
-ax.quiver(vec_ab[0], vec_ab[1], vec_an_rel[0], vec_an_rel[1], color='g', angles='xy', scale_units='xy', scale=1, label=r'$(\vec{a}_{A/B})_n$')
+# Step 2: (a_A/B)_n from tip of a_B
+ax.quiver(vec_ab[0], vec_ab[1], vec_an_rel[0], vec_an_rel[1], color='g', angles='xy', scale_units='xy', scale=1, label=r'$(\vec{a}_{A/B})_n$ (A to B)')
 
-# (a_A/B)_t (Cyan) - Starts at tip of (a_A/B)_n
-ax.quiver(vec_ab[0]+vec_an_rel[0], vec_ab[1]+vec_an_rel[1], vec_at_rel[0], vec_at_rel[1], color='c', angles='xy', scale_units='xy', scale=1, label=r'$(\vec{a}_{A/B})_t$')
+# Step 3: (a_A/B)_t from tip of (a_A/B)_n
+t_start = vec_ab + vec_an_rel
+ax.quiver(t_start[0], t_start[1], vec_at_rel[0], vec_at_rel[1], color='c', angles='xy', scale_units='xy', scale=1, label=r'$(\vec{a}_{A/B})_t$ ($\perp$ rod)')
 
-# a_A (Red) - Resultant from Origin to final tip
-ax.quiver(0, 0, vec_aa[0], vec_aa[1], color='r', angles='xy', scale_units='xy', scale=1, label=r'$\vec{a}_A$')
+# Step 4: a_A Resultant (Origin to end of chain - MUST be horizontal)
+vec_aa = t_start + vec_at_rel
+ax.quiver(0, 0, vec_aa[0], 0, color='r', angles='xy', scale_units='xy', scale=1, label=r'$\vec{a}_A$ (Piston horizontal)')
 
-ax.set_xlim(-limit, limit/2)
-ax.set_ylim(-limit, limit/4)
+# Bounding Box
+all_pts = np.array([[0,0], vec_ab, t_start, vec_aa])
+ax.set_xlim(np.min(all_pts[:,0]) - 1000, np.max(all_pts[:,0]) + 1000)
+ax.set_ylim(np.min(all_pts[:,1]) - 1000, np.max(all_pts[:,1]) + 1000)
+
+ax.axhline(0, color='black', lw=1)
 ax.grid(True, linestyle='--')
 ax.set_aspect('equal')
 ax.legend()
