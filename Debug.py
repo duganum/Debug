@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 st.set_page_config(layout="wide")
-st.title("Final Corrected Slider-Crank: Upper-Right Velocity")
+st.title("Final Corrected Slider-Crank Analysis")
 
 # 1. Mechanism Inputs
 st.sidebar.header("Mechanism Control")
@@ -16,20 +16,19 @@ r_ft, l_ft = r_in / 12, l_in / 12
 omega_rad = (omega_rpm * 2 * np.pi) / 60
 
 # 2. COORDINATE GEOMETRY
-# θ from left means B is at (r*cos(180-theta), r*sin(180-theta))
+# θ from left means Cartesian angle for B is 180 - theta
 alpha_rad = np.radians(180 - theta_deg)
 phi_rad = np.arcsin((r_in * np.sin(np.radians(theta_deg))) / l_in)
 
 # 3. VELOCITY POLYGON
 v_b_mag = r_ft * omega_rad
-# v_B is 90° to OB: (180-theta) - 90 = 90-theta. For 60°, this is 30° UP-RIGHT.
+# v_B is 90° to OB: For 60° from left, this is 30° UP-RIGHT
 v_b_angle = np.radians(90 - theta_deg) 
 vec_vb = np.array([v_b_mag * np.cos(v_b_angle), v_b_mag * np.sin(v_b_angle)])
 
 # omega_ab calculation to keep piston v_A horizontal
 omega_ab = (vec_vb[1]) / (l_ft * np.cos(phi_rad))
 v_ab_rel_mag = l_ft * omega_ab
-# v_A/B is perpendicular to rod AB
 vec_v_ab_rel = np.array([-v_ab_rel_mag * np.sin(phi_rad), -v_ab_rel_mag * np.cos(phi_rad)])
 vec_va = vec_vb + vec_v_ab_rel
 
@@ -47,7 +46,7 @@ at_rel_mag = -(vec_ab[1] + vec_an_rel[1]) / np.cos(phi_rad)
 vec_at_rel = np.array([-at_rel_mag * np.sin(phi_rad), at_rel_mag * np.cos(phi_rad)])
 vec_aa_res = vec_ab + vec_an_rel + vec_at_rel
 
-# 5. VISUALIZATION
+# 5. VISUALIZATION (Three Columns)
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -76,3 +75,13 @@ with col2:
 with col3:
     st.subheader("Acceleration Polygon [ft/s²]")
     fig_a, ax_a = plt.subplots(figsize=(5, 5))
+    p1, p2, p3 = vec_ab, vec_ab + vec_an_rel, vec_ab + vec_an_rel + vec_at_rel
+    ax_a.quiver(0, 0, vec_ab[0], vec_ab[1], color='b', angles='xy', scale_units='xy', scale=1)
+    ax_a.text(vec_ab[0], vec_ab[1], f' aB: {ab_mag:.0f}', color='b', fontweight='bold')
+    ax_a.quiver(p1[0], p1[1], vec_an_rel[0], vec_an_rel[1], color='g', angles='xy', scale_units='xy', scale=1)
+    ax_a.quiver(p2[0], p2[1], vec_at_rel[0], vec_at_rel[1], color='c', angles='xy', scale_units='xy', scale=1)
+    ax_a.quiver(0, 0, vec_aa_res[0], 0, color='r', angles='xy', scale_units='xy', scale=1)
+    ax_a.text(vec_aa_res[0], 1000, f' aA: {abs(vec_aa_res[0]):.0f}', color='r', fontweight='bold')
+    lim = ab_mag * 1.5
+    ax_a.set_xlim(-lim, lim); ax_a.set_ylim(-lim, lim); ax_a.set_aspect('equal'); ax_a.grid(True)
+    st.pyplot(fig_a)
