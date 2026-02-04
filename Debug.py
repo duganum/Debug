@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 st.set_page_config(layout="wide")
-st.title("Slider-Crank Analysis: Relative & Absolute Components")
+st.title("Final Corrected Slider-Crank Analysis")
 
 # 1. Mechanism Inputs
 st.sidebar.header("Mechanism Control")
@@ -49,8 +49,8 @@ with col1:
     fig_s, ax_s = plt.subplots(figsize=(5, 5))
     B = np.array([r_in * np.cos(alpha_rad), r_in * np.sin(alpha_rad)])
     A = np.array([B[0] - l_in * np.cos(phi_rad), 0])
-    ax_s.plot([0, B[0]], [0, B[1]], 'bo-', lw=3, label='Crank OB')
-    ax_s.plot([B[0], A[0]], [B[1], A[1]], 'go-', lw=3, label='Rod AB')
+    ax_s.plot([0, B[0]], [0, B[1]], 'bo-', lw=3)
+    ax_s.plot([B[0], A[0]], [B[1], A[1]], 'go-', lw=3)
     ax_s.plot(A[0], A[1], 'rs', markersize=12)
     ax_s.set_xlim(-20, 5); ax_s.set_ylim(-5, 10); ax_s.set_aspect('equal'); ax_s.grid(True)
     st.pyplot(fig_s)
@@ -58,16 +58,12 @@ with col1:
 with col2:
     st.subheader("Velocity Polygon [ft/s]")
     fig_v, ax_v = plt.subplots(figsize=(5, 5))
-    # v_B
     ax_v.quiver(0, 0, vec_vb[0], vec_vb[1], color='b', angles='xy', scale_units='xy', scale=1)
     ax_v.text(vec_vb[0], vec_vb[1], f' vB: {v_b_mag:.1f}', color='b', weight='bold')
-    # v_A/B (Relative)
     ax_v.quiver(vec_vb[0], vec_vb[1], vec_v_ab_rel[0], vec_v_ab_rel[1], color='g', angles='xy', scale_units='xy', scale=1)
     ax_v.text(vec_vb[0]+vec_v_ab_rel[0], vec_vb[1]+vec_v_ab_rel[1], f' vA/B: {abs(v_ab_rel_mag):.1f}', color='g', weight='bold')
-    # v_A (Absolute)
     ax_v.quiver(0, 0, vec_va[0], 0, color='r', angles='xy', scale_units='xy', scale=1)
     ax_v.text(vec_va[0]/2, 2, f' vA: {abs(vec_va[0]):.1f}', color='r', weight='bold')
-    
     lim = v_b_mag * 1.5
     ax_v.set_xlim(-lim, lim); ax_v.set_ylim(-lim, lim); ax_v.set_aspect('equal'); ax_v.grid(True)
     st.pyplot(fig_v)
@@ -76,15 +72,14 @@ with col3:
     st.subheader("Acceleration Polygon [ft/s²]")
     fig_a, ax_a = plt.subplots(figsize=(5, 5))
     p1, p2, p3 = vec_ab, vec_ab + vec_an_rel, vec_ab + vec_an_rel + vec_at_rel
-    
-    # a_B
     ax_a.quiver(0, 0, vec_ab[0], vec_ab[1], color='b', angles='xy', scale_units='xy', scale=1)
     ax_a.text(vec_ab[0], vec_ab[1], f' aB: {ab_mag:.0f}', color='b', weight='bold')
-    # a_A/B (Normal)
     ax_a.quiver(p1[0], p1[1], vec_an_rel[0], vec_an_rel[1], color='g', angles='xy', scale_units='xy', scale=1)
-    ax_a.text(p2[0], p2[1], f' aA/B(n): {an_rel_mag:.0f}', color='g', weight='bold')
-    # a_A/B (Tangential)
+    ax_a.text(p2[0], p2[1], f' an_rel: {an_rel_mag:.0f}', color='g', weight='bold')
     ax_a.quiver(p2[0], p2[1], vec_at_rel[0], vec_at_rel[1], color='c', angles='xy', scale_units='xy', scale=1)
-    ax_a.text(p3[0], p3[1], f' aA/B(t): {abs(at_rel_mag):.0f}', color='c', weight='bold')
-    # a_A (Absolute)
-    ax_a.quiver(0, 0, vec_aa_res
+    ax_a.text(p3[0], p3[1], f' at_rel: {abs(at_rel_mag):.0f}', color='c', weight='bold')
+    ax_a.quiver(0, 0, vec_aa_res[0], 0, color='r', angles='xy', scale_units='xy', scale=1)
+    ax_a.text(vec_aa_res[0]/2, 1000, f' aA: {abs(vec_aa_res[0]):.0f}', color='r', weight='bold')
+    lim = ab_mag * 1.5
+    ax_a.set_xlim(-lim, lim); ax_a.set_ylim(-lim, lim); ax_a.set_aspect('equal'); ax_a.grid(True)
+    st.pyplot(fig_a)
